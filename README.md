@@ -2,6 +2,13 @@
 
 Please see below for descriptions regarding data science projects. 
 
+## Lineup Assessment Tool
+Created a dashboard for analyzing and comparing basketball lineups. Currently only Phoenix Suns lineups from 2018-19 season are available. Application is published [online](https://nap424.shinyapps.io/lineup_assessment_tool/).
+- [x] Code
+- [x] Data
+
+`R` `R Shiny`
+
 ## NHTS
 Visualized trip rates and demographic information in different regions of the United States using National Household Travel Survey (NHTS) data. Application is published [online](https://nap424.shinyapps.io/nhts/).
 - [x] Code
