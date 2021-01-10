@@ -1,31 +1,3 @@
 # Data-Science-Portfolio
 
-Please see below for descriptions regarding data science projects. 
-
-## Lineup Assessment Tool
-Created a dashboard for analyzing and comparing basketball lineups. Currently only Phoenix Suns lineups from 2018-19 season are available. Application is published [online](https://nap424.shinyapps.io/lineup_assessment_tool/).
-- [x] Code
-- [x] Data
-
-`R` `R Shiny`
-
-## NHTS
-Visualized trip rates and demographic information in different regions of the United States using National Household Travel Survey (NHTS) data. Application is published [online](https://nap424.shinyapps.io/nhts/).
-- [x] Code
-- [ ] Data (can be found [online](https://nhts.ornl.gov/downloads))
-
-`R` `R Shiny`
-
-## Patient Volume Visualization
-Visualized historical patient volume at radiology department of large health system in Phoenix, AZ to help improve staff management and scheduling. Application is published [online](https://nap424.shinyapps.io/patient_volume_visualization/).
-- [x] Code
-- [x] Data 
-
-`R` `R Shiny`
-
-## Predicting Cannabis Use
-Developed multinomial regression and random forest models for determining risk of cannabis use in teens given their genetic predisposition and family dynamic.
-- [x] Code
-- [ ] Data
-
-`Python`
+I am continually seeking to learn new technologies and programs, in addition to enhancing my skills in data science, machine learning, statistics, and optimization. I am interested in applying quantitative methods to business strategy, finance, healthcare operations, and basketball analytics.  
