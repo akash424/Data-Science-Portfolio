@@ -1,0 +1,311 @@
+---
+title: ""
+author: ""
+date: ""
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval = FALSE)
+```
+
+## Code
+```{r}
+# library(plyr)
+# 
+# data <- join(TRAIN_trad, TRAIN_adv, by = intersect(names(TRAIN_trad[,1:4]), names(TRAIN_adv[,1:4])), match = 'first')
+# data <- join(data, TRAIN_usg, by = intersect(names(data[,1:4]), names(TRAIN_usg[,1:4])), match = 'first')
+# 
+# library(WriteXLS)
+# setwd('~/Desktop')
+# WriteXLS(data, 'train.xlsx')
+# 
+# final.data <- merge(train_copy, bball_ref_data, by.x = c("PLAYER","SEASON"),
+#                     by.y = c("Player","Season"), sort = FALSE)
+# 
+# WriteXLS(final.data, 'train_master.xlsx')
+
+
+library(readxl)
+train <- read_excel("train_master copy.xlsx")
+
+train[,7:8] <- lapply(train[,7:8], factor)
+
+my.data <- train
+my.data[,9:56] <- scale(my.data[,9:56])
+
+fit <- glm(`W/L` ~.-Pos, data = my.data[,7:56], family = "binomial")
+
+prin_comp <- prcomp(my.data[,9:56], scale. = F)
+
+# biplot(prin_comp, scale = 0)
+library(ggfortify)
+autoplot(prin_comp, data = my.data, colour = 'Pos', loadings=TRUE, loadings.colour='black',
+         loadings.label = TRUE, loadings.label.colour = 'blue', loadings.label.size = 4)
+
+loadings = prin_comp$rotation
+
+pr_var <- (prin_comp$sdev)^2
+prop_varex <- pr_var/sum(pr_var)
+par(mgp=c(2.5,1,0))
+plot(cumsum(prop_varex), xlab = "Principal Component",
+       ylab = "Explained Variance",
+       type = "l",lwd=2.2,col='cadetblue')
+
+pca.data <- data.frame(`W/L` = my.data$`W/L`, Pos = my.data$Pos, prin_comp$x[,1:46])
+
+x=model.matrix(W.L~.,pca.data)[,-1]
+y=pca.data$W.L
+
+# pca.fit <- glm(W.L ~., data = pca.data, family = "binomial")
+
+# library(MASS)
+# 
+# par(mgp=c(2.5,1,0))
+# boxplot(`%3PA`~Pos, data = train, xlab='Position', ylab='%3PA', cex.axis = 1.1, cex.lab=1.25)
+
+library(glmnet)
+set.seed(19)
+cvtfit = cv.glmnet(x, y, family="binomial", nfolds=10, alpha=1, intercept=TRUE, standardize=FALSE)
+plot(cvtfit)
+
+bhatL <- coef(cvtfit$glmnet.fit,s=cvtfit$lambda.min)[,1]
+
+response <- predict(cvtfit, x,
+                    s = 'lambda.min',
+                    type = "response")
+
+
+nTrain = floor(nrow(my.data)*0.75)
+rand = runif(20)
+n_components = 10:35
+params = matrix(0, 26, 10)
+AUCs = matrix(0, 26, 10)
+library(pROC)
+
+for (i in 1:length(n_components)) {
+  
+  pca.data <- data.frame(`W/L` = my.data$`W/L`, Pos = my.data$Pos, prin_comp$x[,1:n_components[i]])
+  
+  x=model.matrix(W.L~.,pca.data)[,-1]
+  y=pca.data$W.L
+  set.seed(19)
+  glm.fit = cv.glmnet(x, y, family="binomial", nfolds = 10, alpha = 1, 
+                      intercept=TRUE, standardize=FALSE)
+  lambda = params[i,] = seq(from=glm.fit$lambda.min, 
+                            to=glm.fit$lambda.1se, 
+                            length.out = 10)
+  
+  for (l in 1:length(lambda)) {
+    test.auc <- rep(0, times=20)
+    for (j in 1:20) {
+      set.seed(rand[j])
+      ii = sample(1:nrow(my.data),nTrain)
+      xtrain = x[ii,]; ytrain = y[ii]
+      xtest = x[-ii,]; ytest = y[-ii]
+      test.fit <- glmnet(xtrain, ytrain, alpha = 1, intercept = TRUE, 
+                         standardize = FALSE, family = "binomial")
+      phat <- predict(test.fit, xtest, s = lambda[l], type = "response")
+      roc_obj = pROC::roc(ytest, phat)
+      test.auc[j] = pROC::auc(roc_obj)
+      
+      # CV.fit <- glmnet(x[folds!=j,], y[folds!=j], alpha = 1, 
+      #                  intercept = TRUE, standardize = FALSE, family = "binomial")
+      # phat <- predict(CV.fit, x[folds==j,],
+      #                     s = lambda[l], type = "response")
+      # roc_obj = pROC::roc(y[folds==j], phat)
+      # CV.auc[j] = pROC::auc(roc_obj)
+    }
+    
+  AUCs[i,l] = mean(test.auc)
+  
+  }
+}
+
+aveAUC = rowMeans(AUCs)
+
+nTrain = floor(nrow(my.data)*0.75)
+rand = runif(20)
+n_components2 = 35:45
+params2 = matrix(0, 11, 10)
+AUCs2 = matrix(0, 11, 10)
+library(pROC)
+
+for (i in 1:length(n_components2)) {
+  
+  pca.data <- data.frame(`W/L` = my.data$`W/L`, Pos = my.data$Pos, prin_comp$x[,1:n_components2[i]])
+  
+  x=model.matrix(W.L~.,pca.data)[,-1]
+  y=pca.data$W.L
+  set.seed(19)
+  glm.fit = cv.glmnet(x, y, family="binomial", nfolds = 10, alpha = 1, 
+                      intercept=TRUE, standardize=FALSE)
+  lambda = params2[i,] = seq(from=glm.fit$lambda.min, 
+                            to=glm.fit$lambda.1se, 
+                            length.out = 10)
+  
+  for (l in 1:length(lambda)) {
+    test.auc2 <- rep(0, times=20)
+    for (j in 1:20) {
+      set.seed(rand[j])
+      ii = sample(1:nrow(my.data),nTrain)
+      xtrain = x[ii,]; ytrain = y[ii]
+      xtest = x[-ii,]; ytest = y[-ii]
+      test.fit <- glmnet(xtrain, ytrain, alpha = 1, intercept = TRUE, 
+                         standardize = FALSE, family = "binomial")
+      phat <- predict(test.fit, xtest, s = lambda[l], type = "response")
+      roc_obj = pROC::roc(ytest, phat)
+      test.auc2[j] = pROC::auc(roc_obj)
+      
+      # CV.fit <- glmnet(x[folds!=j,], y[folds!=j], alpha = 1, 
+      #                  intercept = TRUE, standardize = FALSE, family = "binomial")
+      # phat <- predict(CV.fit, x[folds==j,],
+      #                     s = lambda[l], type = "response")
+      # roc_obj = pROC::roc(y[folds==j], phat)
+      # CV.auc[j] = pROC::auc(roc_obj)
+    }
+    
+    AUCs2[i,l] = mean(test.auc2)
+    
+  }
+}
+
+aveAUC2 = rowMeans(AUCs2)
+
+
+n_components_train = 10:45
+params_train = matrix(0, 36, 10)
+AUCs_train = matrix(0, 36, 10)
+library(pROC)
+
+for (i in 1:length(n_components_train)) {
+  
+  pca.data <- data.frame(`W/L` = my.data$`W/L`, Pos = my.data$Pos, prin_comp$x[,1:n_components_train[i]])
+  
+  x=model.matrix(W.L~.,pca.data)[,-1]
+  y=pca.data$W.L
+  set.seed(19)
+  glm.fit = cv.glmnet(x, y, family="binomial", nfolds = 10, alpha = 1, 
+                      intercept=TRUE, standardize=FALSE)
+  lambda = params_train[i,] = seq(from=glm.fit$lambda.min, 
+                             to=glm.fit$lambda.1se, 
+                             length.out = 10)
+  
+  for (l in 1:length(lambda)) {
+      phat <- predict(glm.fit, x, s = lambda[l], type = "response")
+      roc_obj = pROC::roc(y, phat)
+      AUCs_train[i,l] = pROC::auc(roc_obj)
+  }
+}
+
+aveAUC_train = rowMeans(AUCs_train)
+
+plot(15:45,c(aveAUC[-c(1:5,26)],aveAUC2),type = 'b',col='blue', ylim = c(.88,.90), lwd=2,
+     xlab='Principal Components', ylab = 'AUC')
+lines(15:45, aveAUC_train[-c(1:5)], type = 'b', col='black', lwd=2)
+abline(v=25, col='red',lwd=2)
+legend("bottomright",legend = c('Training','Testing'),col=c('black','blue'),pch = 1, lwd = 2)
+
+# Confirmation
+
+pca_25 = data.frame(`W/L` = my.data$`W/L`, Pos = my.data$Pos, prin_comp$x[,1:25])
+
+x_25=model.matrix(W.L~.,pca_25)[,-1]
+y_25=pca_25$W.L
+fit_25 = cv.glmnet(x_25, y_25, family="binomial", 
+                   nfolds=10, alpha=1, type.measure = 'auc', 
+                   intercept=TRUE, standardize=FALSE)
+plot(fit_25)
+
+cat(max(fit_25$cvm),'\n',fit_25$lambda.min)
+
+final_coefs <- as.data.frame(coef(fit_25$glmnet.fit,s=fit_25$lambda.min)[,1])
+names(final_coefs)=""
+final_coefs <- as.data.frame(t(final_coefs))
+
+
+# fit_25 (principal components = 25) is optimal model
+
+
+
+
+TEST_trad <- read_excel("projectdata.xlsx", 
+                          sheet = "TEST_trad")
+TEST_adv <- read_excel("projectdata.xlsx", 
+                          sheet = "TEST_adv")
+TEST_usg <- read_excel("projectdata.xlsx", 
+                          sheet = "TEST_usg")
+bball_ref_test <- read_excel("bball_ref_test.xlsx")
+
+library(plyr)
+merge <- join(TEST_trad, TEST_adv, by = intersect(names(TEST_trad[,1:4]), names(TEST_adv[,1:4])), match = 'first')
+merge <- join(merge, TEST_usg, by = intersect(names(merge[,1:4]), names(TEST_usg[,1:4])), match = 'first')
+
+final.test <- merge(merge, bball_ref_test, by.x = c("PLAYER"),
+                     by.y = c("Player"), sort = FALSE)
+
+library(WriteXLS)
+setwd('~/Desktop')
+WriteXLS(final.test, 'test_master.xlsx')
+
+test <- read_excel("test_master.xlsx")
+test[,5:6] <- lapply(test[,5:6], factor)
+
+test_scale <- test
+test_scale[,7:54] <- scale(test[,7:54])
+
+test.data <- predict(prin_comp, newdata = test_scale)
+
+test_25 = data.frame(`W/L` = test$`W/L`, Pos = test$Pos, test.data[,1:25])
+
+x_25=model.matrix(W.L~.,test_25)[,-1]
+y_25=test_25$W.L
+
+phat.test <- predict(fit_25, x_25, s = "lambda.min", type = "response")
+roc_test = pROC::roc(y_25, phat.test)
+
+plot(1-roc_test$specificities, roc_test$sensitivities, 
+     type = 'b', col='red', xlab = '1-Specificity', ylab = 'Sensitivity',
+     xlim = c(0,1), ylim = c(0,1))
+legend(x=.7,y=.175,legend = 'AUC=0.899')
+
+yhat.test = predict(fit_25, x_25, s = "lambda.min", type = "class")
+
+tab = table(y_25, yhat.test)
+tpr = tab[4]/(tab[4]+tab[2])
+fpr = tab[3]/(tab[1]+tab[3])
+
+abline(v=fpr,col='blue',lwd=1.5)
+abline(h=tpr,col='blue',lwd=1.5)
+abline(a=0,b=1,lty=2,lwd=2)
+
+image(tab, col=blues9, xaxt='n',yaxt='n')
+box(lwd=5)
+text(0,0,"0.098",col = 'white',cex = 2)
+text(0,1,"0.400",col = 'black',cex = 2)
+text(1,0,"0.401",col = 'black',cex = 2)
+text(1,1,"0.101",col = 'white',cex = 2)
+mtext('Observed', side=3, line=1.5, at=.5)
+mtext('Predicted', side=2, line = 1.5, at=.5)
+mtext('L', side=3, line=.5, at=0, font = 2, cex = 2, col = 'red')
+mtext('W', side=3, line=.5, at=1, font = 2, cex = 2, col = 'forestgreen')
+corners = par("usr") #Gets the four corners of plot area (x1, x2, y1, y2)
+par(xpd = TRUE) #Draw outside plot area
+text(x = -.60, y = 1, "L", font = 2, col = 'red',cex = 2)
+text(x = -.60, y = 0, "W", font = 2, col = 'forestgreen',cex = 2)
+
+allAUC = data.frame(allAUC, row.names = as.character(10:45))
+all.params = rbind(params[-26,],params2)
+all.params = data.frame(all.params, row.names = as.character(10:45))
+
+new_coefs = matrix(0,48,25)
+for (i in 1:25){
+  new_coefs[,i] = loadings[,i] * as.numeric(final_coefs[i+5])
+}
+
+simp_coefs <- as.data.frame(rowSums(new_coefs), row.names = names(test[,7:54]))
+var_imp <- abs(simp_coefs)
+
+```
+
+
