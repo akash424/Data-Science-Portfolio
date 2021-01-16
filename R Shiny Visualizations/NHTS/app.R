@@ -7,13 +7,16 @@
 #    http://shiny.rstudio.com/
 #
 
-library(rstudioapi)
-current_path = getActiveDocumentContext()$path 
-setwd(dirname(current_path))
+# library(rstudioapi)
+# current_path = getActiveDocumentContext()$path
+# setwd(dirname(current_path))
 
 library(readxl)
-hh <- read.csv("data/hhpub.csv", stringsAsFactors=FALSE)
-per <- read.csv("data/perpub.csv", stringsAsFactors=FALSE)
+# hh <- read.csv("data/hhpub.csv", stringsAsFactors=FALSE)
+# per <- read.csv("data/perpub.csv", stringsAsFactors=FALSE)
+
+hh <- read.csv(unz("data.zip", "hhpub.csv"), stringsAsFactors = F)
+per <- read.csv(unz("data.zip", "perpub.csv"), stringsAsFactors = F)
 
 hh$CNTTDHH_weighted = hh$CNTTDHH * hh$WTHHFIN
 hh$HHSIZE_weighted = hh$HHSIZE * hh$WTHHFIN
@@ -406,6 +409,30 @@ a <- list(
   tickfont = list(size = 12)
 )
 
+# Preparing the geographical data
+library(rgdal)
+library(leaflet)
+library(geojsonio)
+library(RColorBrewer)
+library(utils)
+
+states <- 
+  geojson_read( 
+    x = "https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json"
+    , what = "sp"
+  )
+
+#CBSA <- readOGR("data/tl_2017_us_cbsa.shp", layer = "tl_2017_us_cbsa")
+unzip("data.zip", exdir="data")
+CBSA <- readOGR(dsn = "data", layer = "tl_2017_us_cbsa")
+
+cols.num <- c("ALAND","AWATER")
+CBSA@data[cols.num] <- sapply(CBSA@data[cols.num],as.character)
+CBSA@data[cols.num] <- sapply(CBSA@data[cols.num],as.numeric)
+
+CBSA_main <- subset(CBSA, CBSA$NAME %in% CBSA_name)
+
+#####################################################################################################
 
 library(tidyr)
 library(dplyr)
@@ -753,7 +780,8 @@ our_summary5 <-
 
 # income unweighted
 
-PincUn_summary <- ggplot(PincUn_long, aes(`Proportion of Households`, colour = `HH Income Level`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+#PincUn_summary <- ggplot(PincUn_long, aes(`Proportion of Households`, colour = `HH Income Level`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+PincUn_summary <- ggplot(PincUn_long, aes(`Proportion of Households`, fill = `HH Income Level`)) + geom_histogram(position = "identity", alpha = 0.4, binwidth = 0.05) + ylab("CBSA Count") + theme(text = element_text(size = 14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
 
 PincUn_stats <- summary_table(dplyr::group_by(PincUn_long, `HH Income Level`), our_summary1)
 
@@ -777,7 +805,8 @@ PincUn.plot <- plot_ly(PincUn[-53,], x = ~`<$35k`, y = ~Name, type = 'bar', orie
          xaxis = list(title = "", gridcolor = "black", gridwidth = 3, tickfont = list(size = 16)),
          yaxis = a)
 
-PincUn2_summary <- ggplot(PincUn2_long, aes(`Proportion of Persons`, colour = `HH Income Level`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+#PincUn2_summary <- ggplot(PincUn2_long, aes(`Proportion of Persons`, colour = `HH Income Level`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+PincUn2_summary <- ggplot(PincUn2_long, aes(`Proportion of Persons`, fill = `HH Income Level`)) + geom_histogram(position = "identity", alpha = 0.4, binwidth = 0.05) + ylab("CBSA Count") + theme(text = element_text(size = 14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
 
 PincUn2_stats <- summary_table(dplyr::group_by(PincUn2_long, `HH Income Level`), our_summary2)
 
@@ -801,7 +830,8 @@ PincUn2.plot <- plot_ly(PincUn2[-53,], x = ~`<$35k`, y = ~Name, type = 'bar', or
          xaxis = list(title = "", gridcolor = "black", gridwidth = 3, tickfont = list(size = 16)),
          yaxis = a)
 
-PincUn3_summary <- ggplot(PincUn3_long, aes(`Proportion of Trips`, colour = `HH Income Level`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+#PincUn3_summary <- ggplot(PincUn3_long, aes(`Proportion of Trips`, colour = `HH Income Level`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+PincUn3_summary <- ggplot(PincUn3_long, aes(`Proportion of Trips`, fill = `HH Income Level`)) + geom_histogram(position = "identity", alpha = 0.4, binwidth = 0.05) + ylab("CBSA Count") + theme(text = element_text(size = 14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
 
 PincUn3_stats <- summary_table(dplyr::group_by(PincUn3_long, `HH Income Level`), our_summary3)
 
@@ -825,18 +855,183 @@ PincUn3.plot <- plot_ly(PincUn3[-53,], x = ~`<$35k`, y = ~Name, type = 'bar', or
          xaxis = list(title = "", gridcolor = "black", gridwidth = 3, tickfont = list(size = 16)),
          yaxis = a)
 
-htrincUn_summary <- ggplot(htrincUn_long, aes(`Household Trip Rate`, colour = `HH Income Level`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+#htrincUn_summary <- ggplot(htrincUn_long, aes(`Household Trip Rate`, colour = `HH Income Level`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+htrincUn_summary <- ggplot(htrincUn_long, aes(`Household Trip Rate`, fill = `HH Income Level`)) + geom_histogram(position = "identity", alpha = 0.4, binwidth = 1.5) + ylab("CBSA Count") + theme(text = element_text(size = 14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
 
 htrincUn_stats <- summary_table(dplyr::group_by(htrincUn_long, `HH Income Level`), our_summary4)
 
-ptrincUn_summary <- ggplot(ptrincUn_long, aes(`Person Trip Rate`, colour = `HH Income Level`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+CBSA_main_htrincUn <- merge(CBSA_main, htrincUn,
+                            by.x = c("CBSAFP", "NAME"),
+                            by.y = c("CBSA", "Name"))
+
+pal_htrincUn <- colorNumeric(palette = "YlOrRd",
+                        domain = c(CBSA_main_htrincUn$`<$35k`,
+                                   CBSA_main_htrincUn$`$35k-<$75k`,
+                                   CBSA_main_htrincUn$`$75k+`))
+
+labels_htrincUn <- list()
+
+labels_htrincUn[[1]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / household",
+  CBSA_main_htrincUn$NAME, CBSA_main_htrincUn$`<$35k`
+) %>% lapply(htmltools::HTML)
+
+labels_htrincUn[[2]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / household",
+  CBSA_main_htrincUn$NAME, CBSA_main_htrincUn$`$35k-<$75k`
+) %>% lapply(htmltools::HTML)
+
+labels_htrincUn[[3]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / household",
+  CBSA_main_htrincUn$NAME, CBSA_main_htrincUn$`$75k+`
+) %>% lapply(htmltools::HTML)
+
+htrincUn.map <- leaflet(states) %>%
+  setView(-96, 35.8, 4) %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  addPolygons(data = CBSA_main_htrincUn,
+              group = "<$35k",
+              fillColor = ~pal_htrincUn(`<$35k`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_htrincUn[[1]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_htrincUn,
+              group = "$35k-<$75k",
+              fillColor = ~pal_htrincUn(`$35k-<$75k`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_htrincUn[[2]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_htrincUn,
+              group = "$75k+",
+              fillColor = ~pal_htrincUn(`$75k+`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_htrincUn[[3]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addLegend(pal = pal_htrincUn, values = c(CBSA_main_htrincUn$`<$35k`,
+                                      CBSA_main_htrincUn$`$35k-<$75k`,
+                                      CBSA_main_htrincUn$`$75k+`),
+            opacity = 0.7, title = "Household Trip Rates", position = "bottomright") %>%
+  addLayersControl(baseGroups = c("<$35k", "$35k-<$75k", "$75k+"),
+                   options = layersControlOptions(collapsed = F)) %>%
+  hideGroup(c("$35k-<$75k", "$75k+")) %>%
+  htmlwidgets::onRender("
+        function() {
+            $('.leaflet-control-layers-list').prepend('<strong><label style=\"text-align:center\">HH Income Level</label></strong>');
+        }
+    ")
+
+#ptrincUn_summary <- ggplot(ptrincUn_long, aes(`Person Trip Rate`, colour = `HH Income Level`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+ptrincUn_summary <- ggplot(ptrincUn_long, aes(`Person Trip Rate`, fill = `HH Income Level`)) + geom_histogram(position = "identity", alpha = 0.4, binwidth = 0.25) + ylab("CBSA Count") + theme(text = element_text(size = 14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
 
 ptrincUn_stats <- summary_table(dplyr::group_by(ptrincUn_long, `HH Income Level`), our_summary5)
+
+CBSA_main_ptrincUn <- merge(CBSA_main, ptrincUn,
+                            by.x = c("CBSAFP", "NAME"),
+                            by.y = c("CBSA", "Name"))
+
+pal_ptrincUn <- colorNumeric(palette = "YlOrRd",
+                             domain = c(CBSA_main_ptrincUn$`<$35k`,
+                                        CBSA_main_ptrincUn$`$35k-<$75k`,
+                                        CBSA_main_ptrincUn$`$75k+`))
+
+labels_ptrincUn <- list()
+
+labels_ptrincUn[[1]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / person",
+  CBSA_main_ptrincUn$NAME, CBSA_main_ptrincUn$`<$35k`
+) %>% lapply(htmltools::HTML)
+
+labels_ptrincUn[[2]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / person",
+  CBSA_main_ptrincUn$NAME, CBSA_main_ptrincUn$`$35k-<$75k`
+) %>% lapply(htmltools::HTML)
+
+labels_ptrincUn[[3]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / person",
+  CBSA_main_ptrincUn$NAME, CBSA_main_ptrincUn$`$75k+`
+) %>% lapply(htmltools::HTML)
+
+ptrincUn.map <- leaflet(states) %>%
+  setView(-96, 35.8, 4) %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  addPolygons(data = CBSA_main_ptrincUn,
+              group = "<$35k",
+              fillColor = ~pal_ptrincUn(`<$35k`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_ptrincUn[[1]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_ptrincUn,
+              group = "$35k-<$75k",
+              fillColor = ~pal_ptrincUn(`$35k-<$75k`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_ptrincUn[[2]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_ptrincUn,
+              group = "$75k+",
+              fillColor = ~pal_ptrincUn(`$75k+`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_ptrincUn[[3]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addLegend(pal = pal_ptrincUn, values = c(CBSA_main_ptrincUn$`<$35k`,
+                                      CBSA_main_ptrincUn$`$35k-<$75k`,
+                                      CBSA_main_ptrincUn$`$75k+`),
+            opacity = 0.7, title = "Person Trip Rates", position = "bottomright") %>%
+  addLayersControl(baseGroups = c("<$35k", "$35k-<$75k", "$75k+"),
+                   options = layersControlOptions(collapsed = F)) %>%
+  hideGroup(c("$35k-<$75k", "$75k+")) %>%
+  htmlwidgets::onRender("
+        function() {
+            $('.leaflet-control-layers-list').prepend('<strong><label style=\"text-align:center\">HH Income Level</label></strong>');
+        }
+    ")
 
 
 # income weighted
 
-PincWT_summary <- ggplot(PincWT_long, aes(`Proportion of Households`, colour = `HH Income Level`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+#PincWT_summary <- ggplot(PincWT_long, aes(`Proportion of Households`, colour = `HH Income Level`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+PincWT_summary <- ggplot(PincWT_long, aes(`Proportion of Households`, fill = `HH Income Level`)) + geom_histogram(position = "identity", alpha = 0.4, binwidth = 0.05) + ylab("CBSA Count") + theme(text = element_text(size = 14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
 
 PincWT_stats <- summary_table(dplyr::group_by(PincWT_long, `HH Income Level`), our_summary1)
 
@@ -860,7 +1055,10 @@ PincWT.plot <- plot_ly(PincWT[-53,], x = ~`<$35k`, y = ~Name, type = 'bar', orie
          xaxis = list(title = "", gridcolor = "black", gridwidth = 3, tickfont = list(size = 16)),
          yaxis = a)
 
-PincWT2_summary <- ggplot(PincWT2_long, aes(`Proportion of Persons`, colour = `HH Income Level`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+
+
+#PincWT2_summary <- ggplot(PincWT2_long, aes(`Proportion of Persons`, colour = `HH Income Level`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+PincWT2_summary <- ggplot(PincWT2_long, aes(`Proportion of Persons`, fill = `HH Income Level`)) + geom_histogram(position = "identity", alpha = 0.4, binwidth = 0.05) + ylab("CBSA Count") + theme(text = element_text(size = 14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
 
 PincWT2_stats <- summary_table(dplyr::group_by(PincWT2_long, `HH Income Level`), our_summary2)
 
@@ -884,7 +1082,8 @@ PincWT2.plot <- plot_ly(PincWT2[-53,], x = ~`<$35k`, y = ~Name, type = 'bar', or
          xaxis = list(title = "", gridcolor = "black", gridwidth = 3, tickfont = list(size = 16)),
          yaxis = a)
 
-PincWT3_summary <- ggplot(PincWT3_long, aes(`Proportion of Trips`, colour = `HH Income Level`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+#PincWT3_summary <- ggplot(PincWT3_long, aes(`Proportion of Trips`, colour = `HH Income Level`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+PincWT3_summary <- ggplot(PincWT3_long, aes(`Proportion of Trips`, fill = `HH Income Level`)) + geom_histogram(position = "identity", alpha = 0.4, binwidth = 0.05) + ylab("CBSA Count") + theme(text = element_text(size = 14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
 
 PincWT3_stats <- summary_table(dplyr::group_by(PincWT3_long, `HH Income Level`), our_summary3)
 
@@ -908,18 +1107,183 @@ PincWT3.plot <- plot_ly(PincWT3[-53,], x = ~`<$35k`, y = ~Name, type = 'bar', or
          xaxis = list(title = "", gridcolor = "black", gridwidth = 3, tickfont = list(size = 16)),
          yaxis = a)
 
-htrincWT_summary <- ggplot(htrincWT_long, aes(`Household Trip Rate`, colour = `HH Income Level`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+#htrincWT_summary <- ggplot(htrincWT_long, aes(`Household Trip Rate`, colour = `HH Income Level`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+htrincWT_summary <- ggplot(htrincWT_long, aes(`Household Trip Rate`, fill = `HH Income Level`)) + geom_histogram(position = "identity", alpha = 0.4, binwidth = 1.5) + ylab("CBSA Count") + theme(text = element_text(size = 14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
 
 htrincWT_stats <- summary_table(dplyr::group_by(htrincWT_long, `HH Income Level`), our_summary4)
 
-ptrincWT_summary <- ggplot(ptrincWT_long, aes(`Person Trip Rate`, colour = `HH Income Level`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+CBSA_main_htrincWT <- merge(CBSA_main, htrincWT,
+                            by.x = c("CBSAFP", "NAME"),
+                            by.y = c("CBSA", "Name"))
+
+pal_htrincWT <- colorNumeric(palette = "YlOrRd",
+                             domain = c(CBSA_main_htrincWT$`<$35k`,
+                                        CBSA_main_htrincWT$`$35k-<$75k`,
+                                        CBSA_main_htrincWT$`$75k+`))
+
+labels_htrincWT <- list()
+
+labels_htrincWT[[1]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / household",
+  CBSA_main_htrincWT$NAME, CBSA_main_htrincWT$`<$35k`
+) %>% lapply(htmltools::HTML)
+
+labels_htrincWT[[2]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / household",
+  CBSA_main_htrincWT$NAME, CBSA_main_htrincWT$`$35k-<$75k`
+) %>% lapply(htmltools::HTML)
+
+labels_htrincWT[[3]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / household",
+  CBSA_main_htrincWT$NAME, CBSA_main_htrincWT$`$75k+`
+) %>% lapply(htmltools::HTML)
+
+htrincWT.map <- leaflet(states) %>%
+  setView(-96, 35.8, 4) %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  addPolygons(data = CBSA_main_htrincWT,
+              group = "<$35k",
+              fillColor = ~pal_htrincWT(`<$35k`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_htrincWT[[1]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_htrincWT,
+              group = "$35k-<$75k",
+              fillColor = ~pal_htrincWT(`$35k-<$75k`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_htrincWT[[2]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_htrincWT,
+              group = "$75k+",
+              fillColor = ~pal_htrincWT(`$75k+`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_htrincWT[[3]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addLegend(pal = pal_htrincWT, values = c(CBSA_main_htrincWT$`<$35k`,
+                                           CBSA_main_htrincWT$`$35k-<$75k`,
+                                           CBSA_main_htrincWT$`$75k+`),
+            opacity = 0.7, title = "Household Trip Rates", position = "bottomright") %>%
+  addLayersControl(baseGroups = c("<$35k", "$35k-<$75k", "$75k+"),
+                   options = layersControlOptions(collapsed = F)) %>%
+  hideGroup(c("$35k-<$75k", "$75k+")) %>%
+  htmlwidgets::onRender("
+        function() {
+            $('.leaflet-control-layers-list').prepend('<strong><label style=\"text-align:center\">HH Income Level</label></strong>');
+        }
+    ")
+
+#ptrincWT_summary <- ggplot(ptrincWT_long, aes(`Person Trip Rate`, colour = `HH Income Level`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+ptrincWT_summary <- ggplot(ptrincWT_long, aes(`Person Trip Rate`, fill = `HH Income Level`)) + geom_histogram(position = "identity", alpha = 0.4, binwidth = 0.25) + ylab("CBSA Count") + theme(text = element_text(size = 14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
 
 ptrincWT_stats <- summary_table(dplyr::group_by(ptrincWT_long, `HH Income Level`), our_summary5)
+
+CBSA_main_ptrincWT <- merge(CBSA_main, ptrincWT,
+                            by.x = c("CBSAFP", "NAME"),
+                            by.y = c("CBSA", "Name"))
+
+pal_ptrincWT <- colorNumeric(palette = "YlOrRd",
+                             domain = c(CBSA_main_ptrincWT$`<$35k`,
+                                        CBSA_main_ptrincWT$`$35k-<$75k`,
+                                        CBSA_main_ptrincWT$`$75k+`))
+
+labels_ptrincWT <- list()
+
+labels_ptrincWT[[1]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / person",
+  CBSA_main_ptrincWT$NAME, CBSA_main_ptrincWT$`<$35k`
+) %>% lapply(htmltools::HTML)
+
+labels_ptrincWT[[2]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / person",
+  CBSA_main_ptrincWT$NAME, CBSA_main_ptrincWT$`$35k-<$75k`
+) %>% lapply(htmltools::HTML)
+
+labels_ptrincWT[[3]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / person",
+  CBSA_main_ptrincWT$NAME, CBSA_main_ptrincWT$`$75k+`
+) %>% lapply(htmltools::HTML)
+
+ptrincWT.map <- leaflet(states) %>%
+  setView(-96, 35.8, 4) %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  addPolygons(data = CBSA_main_ptrincWT,
+              group = "<$35k",
+              fillColor = ~pal_ptrincWT(`<$35k`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_ptrincWT[[1]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_ptrincWT,
+              group = "$35k-<$75k",
+              fillColor = ~pal_ptrincWT(`$35k-<$75k`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_ptrincWT[[2]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_ptrincWT,
+              group = "$75k+",
+              fillColor = ~pal_ptrincWT(`$75k+`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_ptrincWT[[3]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addLegend(pal = pal_ptrincWT, values = c(CBSA_main_ptrincWT$`<$35k`,
+                                           CBSA_main_ptrincWT$`$35k-<$75k`,
+                                           CBSA_main_ptrincWT$`$75k+`),
+            opacity = 0.7, title = "Person Trip Rates", position = "bottomright") %>%
+  addLayersControl(baseGroups = c("<$35k", "$35k-<$75k", "$75k+"),
+                   options = layersControlOptions(collapsed = F)) %>%
+  hideGroup(c("$35k-<$75k", "$75k+")) %>%
+  htmlwidgets::onRender("
+        function() {
+            $('.leaflet-control-layers-list').prepend('<strong><label style=\"text-align:center\">HH Income Level</label></strong>');
+        }
+    ")
 
 
 # size unweighted
 
-PsizeUn_summary <- ggplot(PsizeUn_long, aes(`Proportion of Households`, colour = `Household Size`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+#PsizeUn_summary <- ggplot(PsizeUn_long, aes(`Proportion of Households`, colour = `Household Size`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+PsizeUn_summary <- ggplot(PsizeUn_long, aes(`Proportion of Households`, fill = `Household Size`)) + geom_histogram(position = "identity", alpha = 0.4, binwidth = 0.05) + ylab("CBSA Count") + theme(text = element_text(size = 14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
 
 PsizeUn_stats <- summary_table(dplyr::group_by(PsizeUn_long, `Household Size`), our_summary1)
 
@@ -947,7 +1311,8 @@ PsizeUn.plot <- plot_ly(PsizeUn[-53,], x = ~`1`, y = ~Name, type = 'bar', orient
          xaxis = list(title = "", gridcolor = "black", gridwidth = 3, tickfont = list(size = 16)),
          yaxis = a)
 
-PsizeUn2_summary <- ggplot(PsizeUn2_long, aes(`Proportion of Persons`, colour = `Household Size`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+#PsizeUn2_summary <- ggplot(PsizeUn2_long, aes(`Proportion of Persons`, colour = `Household Size`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+PsizeUn2_summary <- ggplot(PsizeUn2_long, aes(`Proportion of Persons`, fill = `Household Size`)) + geom_histogram(position = "identity", alpha = 0.4, binwidth = 0.05) + ylab("CBSA Count") + theme(text = element_text(size = 14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
 
 PsizeUn2_stats <- summary_table(dplyr::group_by(PsizeUn2_long, `Household Size`), our_summary2)
 
@@ -975,7 +1340,8 @@ PsizeUn2.plot <- plot_ly(PsizeUn2[-53,], x = ~`1`, y = ~Name, type = 'bar', orie
          xaxis = list(title = "", gridcolor = "black", gridwidth = 3, tickfont = list(size = 16)),
          yaxis = a)
 
-PsizeUn3_summary <- ggplot(PsizeUn3_long, aes(`Proportion of Trips`, colour = `Household Size`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+#PsizeUn3_summary <- ggplot(PsizeUn3_long, aes(`Proportion of Trips`, colour = `Household Size`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+PsizeUn3_summary <- ggplot(PsizeUn3_long, aes(`Proportion of Trips`, fill = `Household Size`)) + geom_histogram(position = "identity", alpha = 0.4, binwidth = 0.05) + ylab("CBSA Count") + theme(text = element_text(size = 14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
 
 PsizeUn3_stats <- summary_table(dplyr::group_by(PsizeUn3_long, `Household Size`), our_summary3)
 
@@ -1003,18 +1369,223 @@ PsizeUn3.plot <- plot_ly(PsizeUn3[-53,], x = ~`1`, y = ~Name, type = 'bar', orie
          xaxis = list(title = "", gridcolor = "black", gridwidth = 3, tickfont = list(size = 16)),
          yaxis = a)
 
-htrsizeUn_summary <- ggplot(htrsizeUn_long, aes(`Household Trip Rate`, colour = `Household Size`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+#htrsizeUn_summary <- ggplot(htrsizeUn_long, aes(`Household Trip Rate`, colour = `Household Size`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+htrsizeUn_summary <- ggplot(htrsizeUn_long, aes(`Household Trip Rate`, fill = `Household Size`)) + geom_histogram(position = "identity", alpha = 0.4, binwidth = 1.5) + ylab("CBSA Count") + theme(text = element_text(size = 14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
 
 htrsizeUn_stats <- summary_table(dplyr::group_by(htrsizeUn_long, `Household Size`), our_summary4)
 
-ptrsizeUn_summary <- ggplot(ptrsizeUn_long, aes(`Person Trip Rate`, colour = `Household Size`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+CBSA_main_htrsizeUn <- merge(CBSA_main, htrsizeUn,
+                            by.x = c("CBSAFP", "NAME"),
+                            by.y = c("CBSA", "Name"))
+
+pal_htrsizeUn <- colorNumeric(palette = "YlGnBu",
+                             domain = c(CBSA_main_htrsizeUn$`1`,
+                                        CBSA_main_htrsizeUn$`2`,
+                                        CBSA_main_htrsizeUn$`3`,
+                                        CBSA_main_htrsizeUn$`4+`))
+
+labels_htrsizeUn <- list()
+
+labels_htrsizeUn[[1]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / household",
+  CBSA_main_htrsizeUn$NAME, CBSA_main_htrsizeUn$`1`
+) %>% lapply(htmltools::HTML)
+
+labels_htrsizeUn[[2]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / household",
+  CBSA_main_htrsizeUn$NAME, CBSA_main_htrsizeUn$`2`
+) %>% lapply(htmltools::HTML)
+
+labels_htrsizeUn[[3]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / household",
+  CBSA_main_htrsizeUn$NAME, CBSA_main_htrsizeUn$`3`
+) %>% lapply(htmltools::HTML)
+
+labels_htrsizeUn[[4]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / household",
+  CBSA_main_htrsizeUn$NAME, CBSA_main_htrsizeUn$`4+`
+) %>% lapply(htmltools::HTML)
+
+htrsizeUn.map <- leaflet(states) %>%
+  setView(-96, 35.8, 4) %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  addPolygons(data = CBSA_main_htrsizeUn,
+              group = "1",
+              fillColor = ~pal_htrsizeUn(`1`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_htrsizeUn[[1]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_htrsizeUn,
+              group = "2",
+              fillColor = ~pal_htrsizeUn(`2`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_htrsizeUn[[2]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_htrsizeUn,
+              group = "3",
+              fillColor = ~pal_htrsizeUn(`3`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_htrsizeUn[[3]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_htrsizeUn,
+              group = "4+",
+              fillColor = ~pal_htrsizeUn(`4+`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_htrsizeUn[[4]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addLegend(pal = pal_htrsizeUn, values = c(CBSA_main_htrsizeUn$`1`,
+                                           CBSA_main_htrsizeUn$`2`,
+                                           CBSA_main_htrsizeUn$`3`,
+                                           CBSA_main_htrsizeUn$`4+`),
+            opacity = 0.7, title = "Household Trip Rates", position = "bottomright") %>%
+  addLayersControl(baseGroups = c("1", "2", "3", "4+"),
+                   options = layersControlOptions(collapsed = F)) %>%
+  hideGroup(c("2", "3", "4+")) %>%
+  htmlwidgets::onRender("
+        function() {
+            $('.leaflet-control-layers-list').prepend('<strong><label style=\"text-align:center\">HH Size</label></strong>');
+        }
+    ")
+
+#ptrsizeUn_summary <- ggplot(ptrsizeUn_long, aes(`Person Trip Rate`, colour = `Household Size`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+ptrsizeUn_summary <- ggplot(ptrsizeUn_long, aes(`Person Trip Rate`, fill = `Household Size`)) + geom_histogram(position = "identity", alpha = 0.4, binwidth = 0.25) + ylab("CBSA Count") + theme(text = element_text(size = 14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
 
 ptrsizeUn_stats <- summary_table(dplyr::group_by(ptrsizeUn_long, `Household Size`), our_summary5)
+
+CBSA_main_ptrsizeUn <- merge(CBSA_main, ptrsizeUn,
+                             by.x = c("CBSAFP", "NAME"),
+                             by.y = c("CBSA", "Name"))
+
+pal_ptrsizeUn <- colorNumeric(palette = "YlGnBu",
+                              domain = c(CBSA_main_ptrsizeUn$`1`,
+                                         CBSA_main_ptrsizeUn$`2`,
+                                         CBSA_main_ptrsizeUn$`3`,
+                                         CBSA_main_ptrsizeUn$`4+`))
+
+labels_ptrsizeUn <- list()
+
+labels_ptrsizeUn[[1]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / person",
+  CBSA_main_ptrsizeUn$NAME, CBSA_main_ptrsizeUn$`1`
+) %>% lapply(htmltools::HTML)
+
+labels_ptrsizeUn[[2]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / person",
+  CBSA_main_ptrsizeUn$NAME, CBSA_main_ptrsizeUn$`2`
+) %>% lapply(htmltools::HTML)
+
+labels_ptrsizeUn[[3]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / person",
+  CBSA_main_ptrsizeUn$NAME, CBSA_main_ptrsizeUn$`3`
+) %>% lapply(htmltools::HTML)
+
+labels_ptrsizeUn[[4]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / person",
+  CBSA_main_ptrsizeUn$NAME, CBSA_main_ptrsizeUn$`4+`
+) %>% lapply(htmltools::HTML)
+
+ptrsizeUn.map <- leaflet(states) %>%
+  setView(-96, 35.8, 4) %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  addPolygons(data = CBSA_main_ptrsizeUn,
+              group = "1",
+              fillColor = ~pal_ptrsizeUn(`1`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_ptrsizeUn[[1]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_ptrsizeUn,
+              group = "2",
+              fillColor = ~pal_ptrsizeUn(`2`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_ptrsizeUn[[2]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_ptrsizeUn,
+              group = "3",
+              fillColor = ~pal_ptrsizeUn(`3`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_ptrsizeUn[[3]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_ptrsizeUn,
+              group = "4+",
+              fillColor = ~pal_ptrsizeUn(`4+`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_ptrsizeUn[[4]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addLegend(pal = pal_ptrsizeUn, values = c(CBSA_main_ptrsizeUn$`1`,
+                                            CBSA_main_ptrsizeUn$`2`,
+                                            CBSA_main_ptrsizeUn$`3`,
+                                            CBSA_main_ptrsizeUn$`4+`),
+            opacity = 0.7, title = "Person Trip Rates", position = "bottomright") %>%
+  addLayersControl(baseGroups = c("1", "2", "3", "4+"),
+                   options = layersControlOptions(collapsed = F)) %>%
+  hideGroup(c("2", "3", "4+")) %>%
+  htmlwidgets::onRender("
+        function() {
+            $('.leaflet-control-layers-list').prepend('<strong><label style=\"text-align:center\">HH Size</label></strong>');
+        }
+    ")
 
 
 # size weighted
 
-PsizeWT_summary <- ggplot(PsizeWT_long, aes(`Proportion of Households`, colour = `Household Size`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+#PsizeWT_summary <- ggplot(PsizeWT_long, aes(`Proportion of Households`, colour = `Household Size`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+PsizeWT_summary <- ggplot(PsizeWT_long, aes(`Proportion of Households`, fill = `Household Size`)) + geom_histogram(position = "identity", alpha = 0.4, binwidth = 0.05) + ylab("CBSA Count") + theme(text = element_text(size = 14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
 
 PsizeWT_stats <- summary_table(dplyr::group_by(PsizeWT_long, `Household Size`), our_summary1)
 
@@ -1042,7 +1613,8 @@ PsizeWT.plot <- plot_ly(PsizeWT[-53,], x = ~`1`, y = ~Name, type = 'bar', orient
          xaxis = list(title = "", gridcolor = "black", gridwidth = 3, tickfont = list(size = 16)),
          yaxis = a)
 
-PsizeWT2_summary <- ggplot(PsizeWT2_long, aes(`Proportion of Persons`, colour = `Household Size`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+#PsizeWT2_summary <- ggplot(PsizeWT2_long, aes(`Proportion of Persons`, colour = `Household Size`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+PsizeWT2_summary <- ggplot(PsizeWT2_long, aes(`Proportion of Persons`, fill = `Household Size`)) + geom_histogram(position = "identity", alpha = 0.4, binwidth = 0.05) + ylab("CBSA Count") + theme(text = element_text(size = 14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
 
 PsizeWT2_stats <- summary_table(dplyr::group_by(PsizeWT2_long, `Household Size`), our_summary2)
 
@@ -1070,7 +1642,8 @@ PsizeWT2.plot <- plot_ly(PsizeWT2[-53,], x = ~`1`, y = ~Name, type = 'bar', orie
          xaxis = list(title = "", gridcolor = "black", gridwidth = 3, tickfont = list(size = 16)),
          yaxis = a)
 
-PsizeWT3_summary <- ggplot(PsizeWT3_long, aes(`Proportion of Trips`, colour = `Household Size`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+#PsizeWT3_summary <- ggplot(PsizeWT3_long, aes(`Proportion of Trips`, colour = `Household Size`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+PsizeWT3_summary <- ggplot(PsizeWT3_long, aes(`Proportion of Trips`, fill = `Household Size`)) + geom_histogram(position = "identity", alpha = 0.4, binwidth = 0.05) + ylab("CBSA Count") + theme(text = element_text(size = 14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
 
 PsizeWT3_stats <- summary_table(dplyr::group_by(PsizeWT3_long, `Household Size`), our_summary3)
 
@@ -1098,18 +1671,223 @@ PsizeWT3.plot <- plot_ly(PsizeWT3[-53,], x = ~`1`, y = ~Name, type = 'bar', orie
          xaxis = list(title = "", gridcolor = "black", gridwidth = 3, tickfont = list(size = 16)),
          yaxis = a)
 
-htrsizeWT_summary <- ggplot(htrsizeWT_long, aes(`Household Trip Rate`, colour = `Household Size`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+#htrsizeWT_summary <- ggplot(htrsizeWT_long, aes(`Household Trip Rate`, colour = `Household Size`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+htrsizeWT_summary <- ggplot(htrsizeWT_long, aes(`Household Trip Rate`, fill = `Household Size`)) + geom_histogram(position = "identity", alpha = 0.4, binwidth = 1.5) + ylab("CBSA Count") + theme(text = element_text(size = 14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
 
 htrsizeWT_stats <- summary_table(dplyr::group_by(htrsizeWT_long, `Household Size`), our_summary4)
 
-ptrsizeWT_summary <- ggplot(ptrsizeWT_long, aes(`Person Trip Rate`, colour = `Household Size`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+CBSA_main_htrsizeWT <- merge(CBSA_main, htrsizeWT,
+                             by.x = c("CBSAFP", "NAME"),
+                             by.y = c("CBSA", "Name"))
+
+pal_htrsizeWT <- colorNumeric(palette = "YlGnBu",
+                              domain = c(CBSA_main_htrsizeWT$`1`,
+                                         CBSA_main_htrsizeWT$`2`,
+                                         CBSA_main_htrsizeWT$`3`,
+                                         CBSA_main_htrsizeWT$`4+`))
+
+labels_htrsizeWT <- list()
+
+labels_htrsizeWT[[1]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / household",
+  CBSA_main_htrsizeWT$NAME, CBSA_main_htrsizeWT$`1`
+) %>% lapply(htmltools::HTML)
+
+labels_htrsizeWT[[2]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / household",
+  CBSA_main_htrsizeWT$NAME, CBSA_main_htrsizeWT$`2`
+) %>% lapply(htmltools::HTML)
+
+labels_htrsizeWT[[3]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / household",
+  CBSA_main_htrsizeWT$NAME, CBSA_main_htrsizeWT$`3`
+) %>% lapply(htmltools::HTML)
+
+labels_htrsizeWT[[4]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / household",
+  CBSA_main_htrsizeWT$NAME, CBSA_main_htrsizeWT$`4+`
+) %>% lapply(htmltools::HTML)
+
+htrsizeWT.map <- leaflet(states) %>%
+  setView(-96, 35.8, 4) %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  addPolygons(data = CBSA_main_htrsizeWT,
+              group = "1",
+              fillColor = ~pal_htrsizeWT(`1`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_htrsizeWT[[1]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_htrsizeWT,
+              group = "2",
+              fillColor = ~pal_htrsizeWT(`2`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_htrsizeWT[[2]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_htrsizeWT,
+              group = "3",
+              fillColor = ~pal_htrsizeWT(`3`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_htrsizeWT[[3]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_htrsizeWT,
+              group = "4+",
+              fillColor = ~pal_htrsizeWT(`4+`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_htrsizeWT[[4]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addLegend(pal = pal_htrsizeWT, values = c(CBSA_main_htrsizeWT$`1`,
+                                            CBSA_main_htrsizeWT$`2`,
+                                            CBSA_main_htrsizeWT$`3`,
+                                            CBSA_main_htrsizeWT$`4+`),
+            opacity = 0.7, title = "Household Trip Rates", position = "bottomright") %>%
+  addLayersControl(baseGroups = c("1", "2", "3", "4+"),
+                   options = layersControlOptions(collapsed = F)) %>%
+  hideGroup(c("2", "3", "4+")) %>%
+  htmlwidgets::onRender("
+        function() {
+            $('.leaflet-control-layers-list').prepend('<strong><label style=\"text-align:center\">HH Size</label></strong>');
+        }
+    ")
+
+#ptrsizeWT_summary <- ggplot(ptrsizeWT_long, aes(`Person Trip Rate`, colour = `Household Size`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+ptrsizeWT_summary <- ggplot(ptrsizeWT_long, aes(`Person Trip Rate`, fill = `Household Size`)) + geom_histogram(position = "identity", alpha = 0.4, binwidth = 0.25) + ylab("CBSA Count") + theme(text = element_text(size = 14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
 
 ptrsizeWT_stats <- summary_table(dplyr::group_by(ptrsizeWT_long, `Household Size`), our_summary5)
+
+CBSA_main_ptrsizeWT <- merge(CBSA_main, ptrsizeWT,
+                             by.x = c("CBSAFP", "NAME"),
+                             by.y = c("CBSA", "Name"))
+
+pal_ptrsizeWT <- colorNumeric(palette = "YlGnBu",
+                              domain = c(CBSA_main_ptrsizeWT$`1`,
+                                         CBSA_main_ptrsizeWT$`2`,
+                                         CBSA_main_ptrsizeWT$`3`,
+                                         CBSA_main_ptrsizeWT$`4+`))
+
+labels_ptrsizeWT <- list()
+
+labels_ptrsizeWT[[1]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / person",
+  CBSA_main_ptrsizeWT$NAME, CBSA_main_ptrsizeWT$`1`
+) %>% lapply(htmltools::HTML)
+
+labels_ptrsizeWT[[2]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / person",
+  CBSA_main_ptrsizeWT$NAME, CBSA_main_ptrsizeWT$`2`
+) %>% lapply(htmltools::HTML)
+
+labels_ptrsizeWT[[3]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / person",
+  CBSA_main_ptrsizeWT$NAME, CBSA_main_ptrsizeWT$`3`
+) %>% lapply(htmltools::HTML)
+
+labels_ptrsizeWT[[4]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / person",
+  CBSA_main_ptrsizeWT$NAME, CBSA_main_ptrsizeWT$`4+`
+) %>% lapply(htmltools::HTML)
+
+ptrsizeWT.map <- leaflet(states) %>%
+  setView(-96, 35.8, 4) %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  addPolygons(data = CBSA_main_ptrsizeWT,
+              group = "1",
+              fillColor = ~pal_ptrsizeWT(`1`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_ptrsizeWT[[1]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_ptrsizeWT,
+              group = "2",
+              fillColor = ~pal_ptrsizeWT(`2`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_ptrsizeWT[[2]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_ptrsizeWT,
+              group = "3",
+              fillColor = ~pal_ptrsizeWT(`3`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_ptrsizeWT[[3]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_ptrsizeWT,
+              group = "4+",
+              fillColor = ~pal_ptrsizeWT(`4+`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_ptrsizeWT[[4]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addLegend(pal = pal_ptrsizeWT, values = c(CBSA_main_ptrsizeWT$`1`,
+                                            CBSA_main_ptrsizeWT$`2`,
+                                            CBSA_main_ptrsizeWT$`3`,
+                                            CBSA_main_ptrsizeWT$`4+`),
+            opacity = 0.7, title = "Person Trip Rates", position = "bottomright") %>%
+  addLayersControl(baseGroups = c("1", "2", "3", "4+"),
+                   options = layersControlOptions(collapsed = F)) %>%
+  hideGroup(c("2", "3", "4+")) %>%
+  htmlwidgets::onRender("
+        function() {
+            $('.leaflet-control-layers-list').prepend('<strong><label style=\"text-align:center\">HH Size</label></strong>');
+        }
+    ")
 
 
 # vehicle unweighted
 
-PvehUn_summary <- ggplot(PvehUn_long, aes(`Proportion of Households`, colour = `No. of Vehicles Owned`)) + geom_density(size=1.5) + labs(colour="No. of\nVehicles") + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+#PvehUn_summary <- ggplot(PvehUn_long, aes(`Proportion of Households`, colour = `No. of Vehicles Owned`)) + geom_density(size=1.5) + labs(colour="No. of\nVehicles") + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+PvehUn_summary <- ggplot(PvehUn_long, aes(`Proportion of Households`, fill = `No. of Vehicles Owned`)) + geom_histogram(position = "identity", alpha = 0.4, binwidth = 0.05) + ylab("CBSA Count") + theme(text = element_text(size = 14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
 
 PvehUn_stats <- summary_table(dplyr::group_by(PvehUn_long, `No. of Vehicles Owned`), our_summary1)
 
@@ -1137,7 +1915,8 @@ PvehUn.plot <- plot_ly(PvehUn[-53,], x = ~`0`, y = ~Name, type = 'bar', orientat
          xaxis = list(title = "", gridcolor = "black", gridwidth = 3, tickfont = list(size = 16)),
          yaxis = a)
 
-PvehUn2_summary <- ggplot(PvehUn2_long, aes(`Proportion of Persons`, colour = `No. of Vehicles Owned`)) + geom_density(size=1.5) + labs(colour="No. of\nVehicles") + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+#PvehUn2_summary <- ggplot(PvehUn2_long, aes(`Proportion of Persons`, colour = `No. of Vehicles Owned`)) + geom_density(size=1.5) + labs(colour="No. of\nVehicles") + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+PvehUn2_summary <- ggplot(PvehUn2_long, aes(`Proportion of Persons`, fill = `No. of Vehicles Owned`)) + geom_histogram(position = "identity", alpha = 0.4, binwidth = 0.05) + ylab("CBSA Count") + theme(text = element_text(size = 14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
 
 PvehUn2_stats <- summary_table(dplyr::group_by(PvehUn2_long, `No. of Vehicles Owned`), our_summary2)
 
@@ -1165,7 +1944,8 @@ PvehUn2.plot <- plot_ly(PvehUn2[-53,], x = ~`0`, y = ~Name, type = 'bar', orient
          xaxis = list(title = "", gridcolor = "black", gridwidth = 3, tickfont = list(size = 16)),
          yaxis = a)
 
-PvehUn3_summary <- ggplot(PvehUn3_long, aes(`Proportion of Trips`, colour = `No. of Vehicles Owned`)) + geom_density(size=1.5) + labs(colour="No. of\nVehicles") + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+#PvehUn3_summary <- ggplot(PvehUn3_long, aes(`Proportion of Trips`, colour = `No. of Vehicles Owned`)) + geom_density(size=1.5) + labs(colour="No. of\nVehicles") + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+PvehUn3_summary <- ggplot(PvehUn3_long, aes(`Proportion of Trips`, fill = `No. of Vehicles Owned`)) + geom_histogram(position = "identity", alpha = 0.4, binwidth = 0.05) + ylab("CBSA Count") + theme(text = element_text(size = 14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
 
 PvehUn3_stats <- summary_table(dplyr::group_by(PvehUn3_long, `No. of Vehicles Owned`), our_summary3)
 
@@ -1193,18 +1973,223 @@ PvehUn3.plot <- plot_ly(PvehUn3[-53,], x = ~`0`, y = ~Name, type = 'bar', orient
          xaxis = list(title = "", gridcolor = "black", gridwidth = 3, tickfont = list(size = 16)),
          yaxis = a)
 
-htrvehUn_summary <- ggplot(htrvehUn_long, aes(`Household Trip Rate`, colour = `No. of Vehicles Owned`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+#htrvehUn_summary <- ggplot(htrvehUn_long, aes(`Household Trip Rate`, colour = `No. of Vehicles Owned`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+htrvehUn_summary <- ggplot(htrvehUn_long, aes(`Household Trip Rate`, fill = `No. of Vehicles Owned`)) + geom_histogram(position = "identity", alpha = 0.4, binwidth = 1.5) + ylab("CBSA Count") + theme(text = element_text(size = 14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
 
 htrvehUn_stats <- summary_table(dplyr::group_by(htrvehUn_long, `No. of Vehicles Owned`), our_summary4)
 
-ptrvehUn_summary <- ggplot(ptrvehUn_long, aes(`Person Trip Rate`, colour = `No. of Vehicles Owned`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+CBSA_main_htrvehUn <- merge(CBSA_main, htrvehUn,
+                             by.x = c("CBSAFP", "NAME"),
+                             by.y = c("CBSA", "Name"))
+
+pal_htrvehUn <- colorNumeric(palette = "inferno",
+                              domain = c(CBSA_main_htrvehUn$`0`,
+                                         CBSA_main_htrvehUn$`1`,
+                                         CBSA_main_htrvehUn$`2`,
+                                         CBSA_main_htrvehUn$`3+`))
+
+labels_htrvehUn <- list()
+
+labels_htrvehUn[[1]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / household",
+  CBSA_main_htrvehUn$NAME, CBSA_main_htrvehUn$`0`
+) %>% lapply(htmltools::HTML)
+
+labels_htrvehUn[[2]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / household",
+  CBSA_main_htrvehUn$NAME, CBSA_main_htrvehUn$`1`
+) %>% lapply(htmltools::HTML)
+
+labels_htrvehUn[[3]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / household",
+  CBSA_main_htrvehUn$NAME, CBSA_main_htrvehUn$`2`
+) %>% lapply(htmltools::HTML)
+
+labels_htrvehUn[[4]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / household",
+  CBSA_main_htrvehUn$NAME, CBSA_main_htrvehUn$`3+`
+) %>% lapply(htmltools::HTML)
+
+htrvehUn.map <- leaflet(states) %>%
+  setView(-96, 35.8, 4) %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  addPolygons(data = CBSA_main_htrvehUn,
+              group = "0",
+              fillColor = ~pal_htrvehUn(`0`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_htrvehUn[[1]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_htrvehUn,
+              group = "1",
+              fillColor = ~pal_htrvehUn(`1`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_htrvehUn[[2]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_htrvehUn,
+              group = "2",
+              fillColor = ~pal_htrvehUn(`2`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_htrvehUn[[3]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_htrvehUn,
+              group = "3+",
+              fillColor = ~pal_htrvehUn(`3+`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_htrvehUn[[4]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addLegend(pal = pal_htrvehUn, values = c(CBSA_main_htrvehUn$`0`,
+                                           CBSA_main_htrvehUn$`1`,
+                                           CBSA_main_htrvehUn$`2`,
+                                           CBSA_main_htrvehUn$`3+`),
+            opacity = 0.7, title = "Household Trip Rates", position = "bottomright") %>%
+  addLayersControl(baseGroups = c("0", "1", "2", "3+"),
+                   options = layersControlOptions(collapsed = F)) %>%
+  hideGroup(c("1", "2", "3+")) %>%
+  htmlwidgets::onRender("
+        function() {
+            $('.leaflet-control-layers-list').prepend('<strong><label style=\"text-align:center\">No. of Vehicles</label></strong>');
+        }
+    ")
+
+#ptrvehUn_summary <- ggplot(ptrvehUn_long, aes(`Person Trip Rate`, colour = `No. of Vehicles Owned`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+ptrvehUn_summary <- ggplot(ptrvehUn_long, aes(`Person Trip Rate`, fill = `No. of Vehicles Owned`)) + geom_histogram(position = "identity", alpha = 0.4, binwidth = 0.25) + ylab("CBSA Count") + theme(text = element_text(size = 14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
 
 ptrvehUn_stats <- summary_table(dplyr::group_by(ptrvehUn_long, `No. of Vehicles Owned`), our_summary5)
+
+CBSA_main_ptrvehUn <- merge(CBSA_main, ptrvehUn,
+                            by.x = c("CBSAFP", "NAME"),
+                            by.y = c("CBSA", "Name"))
+
+pal_ptrvehUn <- colorNumeric(palette = "inferno",
+                             domain = c(CBSA_main_ptrvehUn$`0`,
+                                        CBSA_main_ptrvehUn$`1`,
+                                        CBSA_main_ptrvehUn$`2`,
+                                        CBSA_main_ptrvehUn$`3+`))
+
+labels_ptrvehUn <- list()
+
+labels_ptrvehUn[[1]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / person",
+  CBSA_main_ptrvehUn$NAME, CBSA_main_ptrvehUn$`0`
+) %>% lapply(htmltools::HTML)
+
+labels_ptrvehUn[[2]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / person",
+  CBSA_main_ptrvehUn$NAME, CBSA_main_ptrvehUn$`1`
+) %>% lapply(htmltools::HTML)
+
+labels_ptrvehUn[[3]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / person",
+  CBSA_main_ptrvehUn$NAME, CBSA_main_ptrvehUn$`2`
+) %>% lapply(htmltools::HTML)
+
+labels_ptrvehUn[[4]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / person",
+  CBSA_main_ptrvehUn$NAME, CBSA_main_ptrvehUn$`3+`
+) %>% lapply(htmltools::HTML)
+
+ptrvehUn.map <- leaflet(states) %>%
+  setView(-96, 35.8, 4) %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  addPolygons(data = CBSA_main_ptrvehUn,
+              group = "0",
+              fillColor = ~pal_ptrvehUn(`0`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_ptrvehUn[[1]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_ptrvehUn,
+              group = "1",
+              fillColor = ~pal_ptrvehUn(`1`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_ptrvehUn[[2]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_ptrvehUn,
+              group = "2",
+              fillColor = ~pal_ptrvehUn(`2`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_ptrvehUn[[3]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_ptrvehUn,
+              group = "3+",
+              fillColor = ~pal_ptrvehUn(`3+`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_ptrvehUn[[4]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addLegend(pal = pal_ptrvehUn, values = c(CBSA_main_ptrvehUn$`0`,
+                                           CBSA_main_ptrvehUn$`1`,
+                                           CBSA_main_ptrvehUn$`2`,
+                                           CBSA_main_ptrvehUn$`3+`),
+            opacity = 0.7, title = "Person Trip Rates", position = "bottomright") %>%
+  addLayersControl(baseGroups = c("0", "1", "2", "3+"),
+                   options = layersControlOptions(collapsed = F)) %>%
+  hideGroup(c("1", "2", "3+")) %>%
+  htmlwidgets::onRender("
+        function() {
+            $('.leaflet-control-layers-list').prepend('<strong><label style=\"text-align:center\">No. of Vehicles</label></strong>');
+        }
+    ")
 
 
 # vehicle weighted
 
-PvehWT_summary <- ggplot(PvehWT_long, aes(`Proportion of Households`, colour = `No. of Vehicles Owned`)) + geom_density(size=1.5) + labs(colour="No. of\nVehicles") + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+#PvehWT_summary <- ggplot(PvehWT_long, aes(`Proportion of Households`, colour = `No. of Vehicles Owned`)) + geom_density(size=1.5) + labs(colour="No. of\nVehicles") + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+PvehWT_summary <- ggplot(PvehWT_long, aes(`Proportion of Households`, fill = `No. of Vehicles Owned`)) + geom_histogram(position = "identity", alpha = 0.4, binwidth = 0.05) + ylab("CBSA Count") + theme(text = element_text(size = 14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
 
 PvehWT_stats <- summary_table(dplyr::group_by(PvehWT_long, `No. of Vehicles Owned`), our_summary1)
 
@@ -1232,7 +2217,8 @@ PvehWT.plot <- plot_ly(PvehWT[-53,], x = ~`0`, y = ~Name, type = 'bar', orientat
          xaxis = list(title = "", gridcolor = "black", gridwidth = 3, tickfont = list(size = 16)),
          yaxis = a)
 
-PvehWT2_summary <- ggplot(PvehWT2_long, aes(`Proportion of Persons`, colour = `No. of Vehicles Owned`)) + geom_density(size=1.5) + labs(colour="No. of\nVehicles") + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+#PvehWT2_summary <- ggplot(PvehWT2_long, aes(`Proportion of Persons`, colour = `No. of Vehicles Owned`)) + geom_density(size=1.5) + labs(colour="No. of\nVehicles") + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+PvehWT2_summary <- ggplot(PvehWT2_long, aes(`Proportion of Persons`, fill = `No. of Vehicles Owned`)) + geom_histogram(position = "identity", alpha = 0.4, binwidth = 0.05) + ylab("CBSA Count") + theme(text = element_text(size = 14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
 
 PvehWT2_stats <- summary_table(dplyr::group_by(PvehWT2_long, `No. of Vehicles Owned`), our_summary2)
 
@@ -1260,7 +2246,8 @@ PvehWT2.plot <- plot_ly(PvehWT2[-53,], x = ~`0`, y = ~Name, type = 'bar', orient
          xaxis = list(title = "", gridcolor = "black", gridwidth = 3, tickfont = list(size = 16)),
          yaxis = a)
 
-PvehWT3_summary <- ggplot(PvehWT3_long, aes(`Proportion of Trips`, colour = `No. of Vehicles Owned`)) + geom_density(size=1.5) + labs(colour="No. of\nVehicles") + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+#PvehWT3_summary <- ggplot(PvehWT3_long, aes(`Proportion of Trips`, colour = `No. of Vehicles Owned`)) + geom_density(size=1.5) + labs(colour="No. of\nVehicles") + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+PvehWT3_summary <- ggplot(PvehWT3_long, aes(`Proportion of Trips`, fill = `No. of Vehicles Owned`)) + geom_histogram(position = "identity", alpha = 0.4, binwidth = 0.05) + ylab("CBSA Count") + theme(text = element_text(size = 14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
 
 PvehWT3_stats <- summary_table(dplyr::group_by(PvehWT3_long, `No. of Vehicles Owned`), our_summary3)
 
@@ -1288,13 +2275,217 @@ PvehWT3.plot <- plot_ly(PvehWT3[-53,], x = ~`0`, y = ~Name, type = 'bar', orient
          xaxis = list(title = "", gridcolor = "black", gridwidth = 3, tickfont = list(size = 16)),
          yaxis = a)
 
-htrvehWT_summary <- ggplot(htrvehWT_long, aes(`Household Trip Rate`, colour = `No. of Vehicles Owned`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+#htrvehWT_summary <- ggplot(htrvehWT_long, aes(`Household Trip Rate`, colour = `No. of Vehicles Owned`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+htrvehWT_summary <- ggplot(htrvehWT_long, aes(`Household Trip Rate`, fill = `No. of Vehicles Owned`)) + geom_histogram(position = "identity", alpha = 0.4, binwidth = 1.5) + ylab("CBSA Count") + theme(text = element_text(size = 14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
 
 htrvehWT_stats <- summary_table(dplyr::group_by(htrvehWT_long, `No. of Vehicles Owned`), our_summary4)
 
-ptrvehWT_summary <- ggplot(ptrvehWT_long, aes(`Person Trip Rate`, colour = `No. of Vehicles Owned`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+CBSA_main_htrvehWT <- merge(CBSA_main, htrvehWT,
+                            by.x = c("CBSAFP", "NAME"),
+                            by.y = c("CBSA", "Name"))
+
+pal_htrvehWT <- colorNumeric(palette = "inferno",
+                             domain = c(CBSA_main_htrvehWT$`0`,
+                                        CBSA_main_htrvehWT$`1`,
+                                        CBSA_main_htrvehWT$`2`,
+                                        CBSA_main_htrvehWT$`3+`))
+
+labels_htrvehWT <- list()
+
+labels_htrvehWT[[1]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / household",
+  CBSA_main_htrvehWT$NAME, CBSA_main_htrvehWT$`0`
+) %>% lapply(htmltools::HTML)
+
+labels_htrvehWT[[2]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / household",
+  CBSA_main_htrvehWT$NAME, CBSA_main_htrvehWT$`1`
+) %>% lapply(htmltools::HTML)
+
+labels_htrvehWT[[3]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / household",
+  CBSA_main_htrvehWT$NAME, CBSA_main_htrvehWT$`2`
+) %>% lapply(htmltools::HTML)
+
+labels_htrvehWT[[4]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / household",
+  CBSA_main_htrvehWT$NAME, CBSA_main_htrvehWT$`3+`
+) %>% lapply(htmltools::HTML)
+
+htrvehWT.map <- leaflet(states) %>%
+  setView(-96, 35.8, 4) %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  addPolygons(data = CBSA_main_htrvehWT,
+              group = "0",
+              fillColor = ~pal_htrvehWT(`0`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_htrvehWT[[1]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_htrvehWT,
+              group = "1",
+              fillColor = ~pal_htrvehWT(`1`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_htrvehWT[[2]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_htrvehWT,
+              group = "2",
+              fillColor = ~pal_htrvehWT(`2`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_htrvehWT[[3]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_htrvehWT,
+              group = "3+",
+              fillColor = ~pal_htrvehWT(`3+`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_htrvehWT[[4]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addLegend(pal = pal_htrvehWT, values = c(CBSA_main_htrvehWT$`0`,
+                                           CBSA_main_htrvehWT$`1`,
+                                           CBSA_main_htrvehWT$`2`,
+                                           CBSA_main_htrvehWT$`3+`),
+            opacity = 0.7, title = "Household Trip Rates", position = "bottomright") %>%
+  addLayersControl(baseGroups = c("0", "1", "2", "3+"),
+                   options = layersControlOptions(collapsed = F)) %>%
+  hideGroup(c("1", "2", "3+")) %>%
+  htmlwidgets::onRender("
+        function() {
+            $('.leaflet-control-layers-list').prepend('<strong><label style=\"text-align:center\">No. of Vehicles</label></strong>');
+        }
+    ")
+
+#ptrvehWT_summary <- ggplot(ptrvehWT_long, aes(`Person Trip Rate`, colour = `No. of Vehicles Owned`)) + geom_density(size=1.5) + theme(text = element_text(size=14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
+ptrvehWT_summary <- ggplot(ptrvehWT_long, aes(`Person Trip Rate`, fill = `No. of Vehicles Owned`)) + geom_histogram(position = "identity", alpha = 0.4, binwidth = 0.25) + ylab("CBSA Count") + theme(text = element_text(size = 14), axis.text = element_text(size = 16), legend.text = element_text(size = 12.5))
 
 ptrvehWT_stats <- summary_table(dplyr::group_by(ptrvehWT_long, `No. of Vehicles Owned`), our_summary5)
+
+CBSA_main_ptrvehWT <- merge(CBSA_main, ptrvehWT,
+                            by.x = c("CBSAFP", "NAME"),
+                            by.y = c("CBSA", "Name"))
+
+pal_ptrvehWT <- colorNumeric(palette = "inferno",
+                             domain = c(CBSA_main_ptrvehWT$`0`,
+                                        CBSA_main_ptrvehWT$`1`,
+                                        CBSA_main_ptrvehWT$`2`,
+                                        CBSA_main_ptrvehWT$`3+`))
+
+labels_ptrvehWT <- list()
+
+labels_ptrvehWT[[1]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / person",
+  CBSA_main_ptrvehWT$NAME, CBSA_main_ptrvehWT$`0`
+) %>% lapply(htmltools::HTML)
+
+labels_ptrvehWT[[2]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / person",
+  CBSA_main_ptrvehWT$NAME, CBSA_main_ptrvehWT$`1`
+) %>% lapply(htmltools::HTML)
+
+labels_ptrvehWT[[3]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / person",
+  CBSA_main_ptrvehWT$NAME, CBSA_main_ptrvehWT$`2`
+) %>% lapply(htmltools::HTML)
+
+labels_ptrvehWT[[4]] <- sprintf(
+  "<strong>%s</strong><br/>%g trips / person",
+  CBSA_main_ptrvehWT$NAME, CBSA_main_ptrvehWT$`3+`
+) %>% lapply(htmltools::HTML)
+
+ptrvehWT.map <- leaflet(states) %>%
+  setView(-96, 35.8, 4) %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  addPolygons(data = CBSA_main_ptrvehWT,
+              group = "0",
+              fillColor = ~pal_ptrvehWT(`0`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_ptrvehWT[[1]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_ptrvehWT,
+              group = "1",
+              fillColor = ~pal_ptrvehWT(`1`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_ptrvehWT[[2]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_ptrvehWT,
+              group = "2",
+              fillColor = ~pal_ptrvehWT(`2`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_ptrvehWT[[3]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addPolygons(data = CBSA_main_ptrvehWT,
+              group = "3+",
+              fillColor = ~pal_ptrvehWT(`3+`),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 2,
+              dashArray = "3",
+              highlightOptions = highlightOptions(color = "black", weight = 5, bringToFront = TRUE),
+              label = labels_ptrvehWT[[4]],
+              labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")) %>%
+  addLegend(pal = pal_ptrvehWT, values = c(CBSA_main_ptrvehWT$`0`,
+                                           CBSA_main_ptrvehWT$`1`,
+                                           CBSA_main_ptrvehWT$`2`,
+                                           CBSA_main_ptrvehWT$`3+`),
+            opacity = 0.7, title = "Person Trip Rates", position = "bottomright") %>%
+  addLayersControl(baseGroups = c("0", "1", "2", "3+"),
+                   options = layersControlOptions(collapsed = F)) %>%
+  hideGroup(c("1", "2", "3+")) %>%
+  htmlwidgets::onRender("
+        function() {
+            $('.leaflet-control-layers-list').prepend('<strong><label style=\"text-align:center\">No. of Vehicles</label></strong>');
+        }
+    ")
 
 
 
@@ -1330,21 +2521,21 @@ Trip = list(
 
 HTR = list(
   
-  `Household Size` = list(Unweighted = list(all.dataUn_hhsize, " ", htrsizeUn_summary, htrsizeUn_stats), Weighted = list(all.dataWT_hhsize, " ", htrsizeWT_summary, htrsizeWT_stats)),
+  `Household Size` = list(Unweighted = list(all.dataUn_hhsize, htrsizeUn.map, htrsizeUn_summary, htrsizeUn_stats), Weighted = list(all.dataWT_hhsize, htrsizeWT.map, htrsizeWT_summary, htrsizeWT_stats)),
   
-  `Income Level` = list(Unweighted = list(all.dataUn_income, " ", htrincUn_summary, htrincUn_stats), Weighted = list(all.dataWT_income, " ", htrincWT_summary, htrincWT_stats)),
+  `Income Level` = list(Unweighted = list(all.dataUn_income, htrincUn.map, htrincUn_summary, htrincUn_stats), Weighted = list(all.dataWT_income, htrincWT.map, htrincWT_summary, htrincWT_stats)),
   
-  `Number of Vehicles` = list(Unweighted = list(all.dataUn_hhveh, " ", htrvehUn_summary, htrvehUn_stats), Weighted = list(all.dataWT_hhveh, " ", htrvehWT_summary, htrvehWT_stats))
+  `Number of Vehicles` = list(Unweighted = list(all.dataUn_hhveh, htrvehUn.map, htrvehUn_summary, htrvehUn_stats), Weighted = list(all.dataWT_hhveh, htrvehWT.map, htrvehWT_summary, htrvehWT_stats))
   
 )
 
 PTR = list(
   
-  `Household Size` = list(Unweighted = list(all.dataUn_hhsize, " ", ptrsizeUn_summary, ptrsizeUn_stats), Weighted = list(all.dataWT_hhsize, " ", ptrsizeWT_summary, ptrsizeWT_stats)),
+  `Household Size` = list(Unweighted = list(all.dataUn_hhsize, ptrsizeUn.map, ptrsizeUn_summary, ptrsizeUn_stats), Weighted = list(all.dataWT_hhsize, ptrsizeWT.map, ptrsizeWT_summary, ptrsizeWT_stats)),
   
-  `Income Level` = list(Unweighted = list(all.dataUn_income, " ", ptrincUn_summary, ptrincUn_stats), Weighted = list(all.dataWT_income, " ", ptrincWT_summary, ptrincWT_stats)),
+  `Income Level` = list(Unweighted = list(all.dataUn_income, ptrincUn.map, ptrincUn_summary, ptrincUn_stats), Weighted = list(all.dataWT_income, ptrincWT.map, ptrincWT_summary, ptrincWT_stats)),
   
-  `Number of Vehicles` = list(Unweighted = list(all.dataUn_hhveh, " ", ptrvehUn_summary, ptrvehUn_stats), Weighted = list(all.dataWT_hhveh, " ", ptrvehWT_summary, ptrvehWT_stats))
+  `Number of Vehicles` = list(Unweighted = list(all.dataUn_hhveh, ptrvehUn.map, ptrvehUn_summary, ptrvehUn_stats), Weighted = list(all.dataWT_hhveh, ptrvehWT.map, ptrvehWT_summary, ptrvehWT_stats))
   
 )
 
@@ -1380,9 +2571,14 @@ ui <- fluidPage( theme = shinytheme("cosmo"),
                  br(),
                  fluidRow(DT::dataTableOutput("stats", width = "80%"))
         ),
-        tabPanel("Visualization",
+        tabPanel("Demographics Plot",
                  br(),
                  plotlyOutput("plot", width = "80%")
+        ),
+        tabPanel("Trip Rates Map",
+                 br(),
+                 tags$style(type = "text/css", "#map {height: calc(100vh - 80px) !important;}"),
+                 leafletOutput("map")
         ),
         tabPanel("Full Data",
                  br(),
@@ -1428,6 +2624,13 @@ server <- function(input, output, session) {
       Person[[input$dataset]][[input$ptype]][[2]]
     } else if (input$choice == "Proportion of Trips") {
       Trip[[input$dataset]][[input$ptype]][[2]]
+    }
+  })
+  output$map <- renderLeaflet({
+    if (input$choice == "Household Trip Rates") {
+      HTR[[input$dataset]][[input$ptype]][[2]]
+    } else if (input$choice == "Person Trip Rates") {
+      PTR[[input$dataset]][[input$ptype]][[2]]
     }
   })
   output$table <- DT::renderDataTable({
