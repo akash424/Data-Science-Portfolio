@@ -1,5 +1,5 @@
 ## Data Quality Analysis
-Created user-defined function capable of searching multiple columns in a table for a pattern, and performing operations on rows containing that pattern.
+Created a user-defined function that searches for a pattern across multiple columns in a table.
 - [x] Code
 - [x] Data
 
