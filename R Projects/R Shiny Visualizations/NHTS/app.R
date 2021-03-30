@@ -7,9 +7,9 @@
 #    http://shiny.rstudio.com/
 #
 
-# library(rstudioapi)
-# current_path = getActiveDocumentContext()$path
-# setwd(dirname(current_path))
+library(rstudioapi)
+current_path = getActiveDocumentContext()$path
+setwd(dirname(current_path))
 
 library(readxl)
 # hh <- read.csv("data/hhpub.csv", stringsAsFactors=FALSE)
