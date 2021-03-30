@@ -3,7 +3,7 @@
 I am continually seeking to learn new technologies and programs, in addition to enhancing my skills in data science, machine learning, statistics, and optimization. I am interested in applying quantitative methods to business strategy, finance, healthcare operations, and basketball analytics. 
 
 The data science projects contained within this repository are separated by the programming language that was used.
-The main projects which highlight my experience in data science are described below.
+The main projects highlighting my experience in data science are described below.
 
 ### R Projects/R Shiny Visualizations/NHTS
 Learned R Shiny independently while interning for the Maricopa Association of Governments (MAG). 
@@ -16,4 +16,4 @@ Cleaned and pre-processed the data, and trained multinomial regression and rando
 Developed a strong familiarity with common Python libraries (sci-kit learn, numpy, pandas) through this project. 
 
 ### R Projects/KangaTech Measurements
-Created an R script that generated automated reports in Excel summarizing KangaTech measurements (neuromuscular conditioning) of all players in the LA Angels organization and highlighting any red flags for the performance and training staff.  
+Created an R script that generated automated reports in Excel summarizing KangaTech measurements (neuromuscular conditioning) of all players in the LA Angels organization and identifying any red flags / problem areas for the performance and training staff.  
