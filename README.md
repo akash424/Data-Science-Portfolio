@@ -13,7 +13,7 @@ Created an R Shiny app to visualize the findings using stacked bar charts and ch
 ### Python Projects/Predicting Cannabis Use
 Conducted a research project for graduate level course to predict adolescents' risk of cannabis use based on their parents' genetics, their own genetics, and other family-related information.
 Cleaned and pre-processed the data, and trained multinomial regression and random forest models.
-Developed a strong familiarity with common Python libraries (sci-kit learn, numpy, pandas) through this project. 
+Developed a strong familiarity with common Python libraries (scikit-learn, numpy, pandas) through this project. 
 
 ### R Projects/KangaTech Measurements
 Created an R script that generated automated reports in Excel summarizing KangaTech measurements (neuromuscular conditioning) of all players in the LA Angels organization and identifying any red flags / problem areas for the performance and training staff.  
