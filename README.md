@@ -10,7 +10,7 @@ For my Biomedical Informatics Master's capstone project, I undertook the task of
 I took the initiative to create a generic template for performing data quality analysis on text data upon request from my Senior Manager at Deloitte. This generic template is a custom-built function that takes several user inputs to filter or transform a dataset based on those inputs. For example, a user may want to find all rows matching a particular regex expression across multiple columns. The function will return all the rows where the columns specified by the user match the regex expression.
 
 - **(NBA) Scoring_vs_Possessions**:
-A simple NBA analytics analysis where I summarized scoring ability as (2/3)*efficiency + (1/3)*points. Efficiency is a measure of how many points a player scored above the mean.  
+A simple NBA analytics analysis where I attempted to rank the best scorers in the NBA by finding the number of points they scored above the mean.   
 
 #### [R Projects](https://github.com/akash424/Data-Science-Portfolio/tree/master/R%20Projects)
 - **KangaTech Measurements**:
