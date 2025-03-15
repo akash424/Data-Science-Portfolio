@@ -10,7 +10,10 @@ For my Biomedical Informatics Master's capstone project, I undertook the task of
 I took the initiative to create a generic template for performing data quality analysis on text data upon request from my Senior Manager at Deloitte. This generic template is a custom-built function that takes several user inputs to filter or transform a dataset based on those inputs. For example, a user may want to find all rows matching a particular regex expression across multiple columns. The function will return all the rows where the columns specified by the user match the regex expression.
 
 - **(NBA) Scoring_vs_Possessions**:
-A simple NBA analytics analysis where I attempted to rank the best scorers in the NBA by finding the number of points they scored above the mean.   
+A simple NBA analytics analysis where I attempted to rank the best scorers in the NBA by finding the number of points they scored above the mean.
+
+- **ATL Hawks Data Analyst - Programming Assessment**:
+Completed a programming assessment for the ATL Hawks where I calculated the highest assister-to-scorer combos in the NBA and analyzed the ATL Hawks team's four factors. 
 
 #### [R Projects](https://github.com/akash424/Data-Science-Portfolio/tree/master/R%20Projects)
 - **KangaTech Measurements**:
